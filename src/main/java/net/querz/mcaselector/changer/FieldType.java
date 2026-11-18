@@ -1,5 +1,7 @@
 package net.querz.mcaselector.changer;
 
+
+import com.goog.mcaselector.plus.nbtstudio.mixin.NbtReplaceField;
 import net.querz.mcaselector.changer.fields.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ public enum FieldType {
 	FORCE_BLEND("ForceBlend", ForceBlendField::new, false, false),
 	REMOVE_LIGHTING_INFO("RemoveLightingInfo", RemoveLightingInfoField::new, false, false),
 	LIGHT_POPULATED("LightPopulated", LightPopulatedField::new, false, false),
+	NBT_REPLACE("NbtReplace", NbtReplaceField::new, false, true),
 	CUSTOM("Custom", CustomField::new, false, false),
 	STRUCTURE_REFERENCE("FixStructureReferences", ReferenceField::new, true, false),
 	SCRIPT("Script", ScriptField::new, true, false);

@@ -1,0 +1,80 @@
+name: Release Plus (macOS arm64)
+
+# The arm64 macOS installer lives in its own workflow on purpose.
+#
+# GitHub's hosted arm64 macOS image regularly accepts a job and then never hands it a runner; after
+# ~15 minutes the job is cancelled without a single step having run (macos-latest and macos-26 both
+# did exactly that on 2026-11-18). A cancelled job is not a failed job, so `continue-on-error` does
+# not neutralise it - it still turns the whole run red. Keeping it out of Release Plus means the
+# publish run stays green while this job simply picks the installer up again once capacity is back.
+on:
+  push:
+    tags:
+      - plus-*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: release-plus-macos-arm-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish-macos-arm:
+    # macos-26 aarch64 sat queued and was cancelled without running a step three times in a row on
+    # 2026-11-18; macos-15 is the other arm64 image and draws from a different pool
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Read version
+        id: version
+        run: |
+          core=$(grep -oE '^version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          plus=$(grep -oE '^plus\.version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          echo "core=$core" >> "$GITHUB_OUTPUT"
+          echo "plus=$plus" >> "$GITHUB_OUTPUT"
+          echo "asset=mcaselector-plus-$core-plus-$plus-aarch64.dmg" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 21
+          distribution: zulu
+          java-package: jdk+fx
+          architecture: aarch64
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          chmod +x ./installer/init
+          ./gradlew build shadowJar -x test --stacktrace --warning-mode all
+
+      - name: Package dmg
+        run: |
+          mkdir -p build/licenses
+          ./installer/init . build/licenses/LICENSE
+          ./gradlew jpackage -PmatrixType=dmg --stacktrace --warning-mode all
+          ls -l build/jpackage
+          mv build/jpackage/*.dmg "build/jpackage/${{ steps.version.outputs.asset }}"
+          ls -l build/jpackage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-26-aarch64-dmg
+          archive: false
+          path: build/jpackage/${{ steps.version.outputs.asset }}
+
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          # only tag and asset: title, body and the "latest" flag belong to the windows job
+          tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: build/jpackage/${{ steps.version.outputs.asset }}

@@ -9,6 +9,9 @@ on:
 
 jobs:
   publish-windows:
+    # Plus releases are built and published by release-plus.yml: upstream's packaging must never attach
+    # plain core assets to one of them, so it only reacts to core releases (a non plus-* tag)
+    if: ${{ github.event_name != 'release' || !startsWith(github.event.release.tag_name, 'plus-') }}
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -115,6 +118,9 @@ jobs:
         shell: bash
 
   publish-unix:
+    # Plus releases are built and published by release-plus.yml: upstream's packaging must never attach
+    # plain core assets to one of them, so it only reacts to core releases (a non plus-* tag)
+    if: ${{ github.event_name != 'release' || !startsWith(github.event.release.tag_name, 'plus-') }}
     runs-on: ${{ matrix.os }}
     container:
       image: ${{ matrix.container_image }}

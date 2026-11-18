@@ -1,5 +1,6 @@
 package net.querz.mcaselector.filter;
 
+import com.goog.mcaselector.plus.nbtstudio.mixin.NbtFilter;
 import net.querz.mcaselector.filter.filters.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public enum FilterType {
 	TILE_ENTITY_AMOUNT("#TileEntities", TileEntityAmountFilter::new, Format.NUMBER),
 	CIRCLE("Circle", CircleFilter::new, Format.TEXT),
 	BORDER("Border", BorderFilter::new, Format.NUMBER),
+	NBT("NBT", NbtFilter::new, Format.TEXT),
 	CUSTOM("Custom", CustomFilter::new, Format.TEXT),
 	SCRIPT("Script", CustomFilter::new, Format.TEXT, false);
 

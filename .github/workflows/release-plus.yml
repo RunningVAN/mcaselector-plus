@@ -1,0 +1,359 @@
+name: Release Plus
+
+# Mirrors upstream Querz/mcaselector .github/workflows/release.yml.
+# The only differences are the trigger, the release target and the dropped
+# upstream-only steps (code signing, wiki bump) which need secrets we do not have.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'plus-*'
+
+permissions:
+  contents: write
+
+# one release per tag: the windows and the unix jobs publish into the same release, and a second
+# push of the same tag must not interleave with a running one
+concurrency:
+  group: release-plus-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Read version
+        id: version
+        # the windows assets carry the same plus identity as the unix ones:
+        # mcaselector-plus-<version>-plus-<plus.version>-setup.exe and
+        # mcaselector-plus-<version>-plus-<plus.version>[-all].jar
+        run: |
+          core=$(grep -oE '^version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          plus=$(grep -oE '^plus\.version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          echo "core=$core" >> "$GITHUB_OUTPUT"
+          echo "plus=$plus" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: zulu
+          java-version: 21
+          java-package: jdk+fx
+          architecture: x64
+
+      - name: Build
+        run: ./gradlew build shadowJar jpackage -x test --stacktrace --warning-mode all
+        shell: bash
+
+      - name: Initialize resources for installer
+        id: initres
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/diag"
+          {
+            echo "=== file ==="; file installer/windows/init; head -1 installer/windows/init | od -c | head -2
+            echo "=== gradle.properties ==="; cat gradle.properties
+            echo "=== build/jpackage ==="; ls -l build/jpackage
+            echo "=== run ==="
+            bash -x ./installer/windows/init . 2>&1
+            echo "=== exit: $? ==="
+            echo "=== build/inno ==="; ls -l build/inno || true
+          } 2>&1 | tee "$RUNNER_TEMP/diag/windows-init.log"
+          exit ${PIPESTATUS[0]}
+        shell: bash
+
+      - name: Report the diagnostics
+        if: steps.initres.outcome == 'failure'
+        run: |
+          python - "$RUNNER_TEMP/diag/windows-init.log" <<'PY'
+          import base64, json, os, sys, urllib.request
+
+          path = sys.argv[1]
+          try:
+              text = open(path, "r", errors="replace").read()
+          except OSError as exc:
+              text = f"no diagnostics: {exc}"
+          text = text[-120000:]
+
+          token = os.environ["GITHUB_TOKEN"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          branch = "ci-log-windows"
+          target = "ci-logs/windows-init.log"
+          api = f"https://api.github.com/repos/{repo}"
+
+          def call(method, url, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(url, data=data, method=method, headers={
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "Content-Type": "application/json",
+              })
+              with urllib.request.urlopen(req) as resp:
+                  return json.loads(resp.read() or b"{}")
+
+          try:
+              try:
+                  call("GET", f"{api}/git/ref/heads/{branch}")
+              except Exception:
+                  sha = os.environ["GITHUB_SHA"]
+                  call("POST", f"{api}/git/refs", {"ref": f"refs/heads/{branch}", "sha": sha})
+              try:
+                  current = call("GET", f"{api}/contents/{target}?ref={branch}")
+                  existing = current.get("sha")
+              except Exception:
+                  existing = None
+              payload = {
+                  "message": f"ci: windows diagnostics for {os.environ.get('GITHUB_REF_NAME')}",
+                  "content": base64.b64encode(text.encode()).decode(),
+                  "branch": branch,
+              }
+              if existing:
+                  payload["sha"] = existing
+              call("PUT", f"{api}/contents/{target}", payload)
+              print("diagnostics pushed")
+          except Exception as exc:
+              print(f"could not push diagnostics: {exc}")
+          PY
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if the installer resources could not be prepared
+        if: steps.initres.outcome == 'failure'
+        run: exit 1
+        shell: bash
+
+      - name: Update Inno Setup
+        run: choco upgrade innosetup -y --no-progress
+        shell: bash
+
+      - name: Build installer
+        run: |
+          "%programfiles(x86)%/Inno Setup 6/iscc.exe" build/inno/inno.iss /q
+        shell: cmd
+
+      - name: Collect assets
+        id: assets
+        # the fat jar keeps its upstream name - upstream ships mcaselector-<version>[-all].jar and
+        # tools may fetch it by that name - so only the release copy is rebranded
+        run: |
+          mkdir -p dist
+          asset="mcaselector-plus-${{ steps.version.outputs.core }}-plus-${{ steps.version.outputs.plus }}"
+          cp build/inno/Output/*.exe dist/
+          for jar in build/libs/mcaselector-*.jar; do
+            name=$(basename "$jar")
+            case "$name" in
+              *-all.jar) cp "$jar" "dist/$asset-all.jar" ;;
+              *) cp "$jar" "dist/$asset.jar" ;;
+            esac
+          done
+          ls -l dist
+        shell: bash
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-installer
+          archive: false
+          path: dist/*.exe
+
+      - name: Upload jars artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-jars
+          path: dist/*.jar
+
+      - name: Publish release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          # the tag carries the numbers (plus-<core>-<plus>), the title spells them out the same way
+          # the window title does - "MCA Selector Plus <core> - Plus <plus>" - instead of pasting the
+          # tag into the title, which produced "MCA Selector Plus plus-2.9-1.0"
+          tag_name: ${{ github.ref_name }}
+          name: MCA Selector Plus ${{ steps.version.outputs.core }} - Plus ${{ steps.version.outputs.plus }}
+          body: |
+            MCA Selector Plus ${{ steps.version.outputs.core }}, Plus layer ${{ steps.version.outputs.plus }}
+            (tag `${{ github.ref_name }}`).
+
+            Asset names carry both versions:
+            `mcaselector-plus-${{ steps.version.outputs.core }}-plus-${{ steps.version.outputs.plus }}-setup.exe`,
+            `-x64.dmg`, `-aarch64.dmg`, `-x64.deb`, `-aarch64.deb`, `-x64.rpm`, `-aarch64.rpm`,
+            `-all.jar` (fat jar with the dependencies) and `.jar` (thin jar, needs JavaFX at runtime).
+
+            The build is the upstream MCA Selector ${{ steps.version.outputs.core }} build, so the
+            window title, the about box and the install directory are the only things that differ.
+          draft: false
+          prerelease: false
+          # a newer core or Plus layer always supersedes the previous release, so /releases/latest -
+          # which is what the in-app update check queries - has to point at this one
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: dist/*
+
+  publish-unix:
+    runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.container_image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- MACOS ---
+          # only the intel image is built here; the arm64 dmg lives in release-plus-macos-arm.yml,
+          # because a starved arm64 runner would otherwise drag this run red
+          - os: macos-26-intel
+            arch: x64
+            type: dmg
+
+          # --- LINUX DEB ---
+          - os: ubuntu-22.04
+            arch: x64
+            type: deb
+            container_image: debian:bookworm
+          - os: ubuntu-22.04-arm
+            arch: aarch64
+            type: deb
+            container_image: debian:bookworm
+
+          # --- LINUX RPM ---
+          - os: ubuntu-22.04
+            arch: x64
+            type: rpm
+            container_image: fedora:latest
+          - os: ubuntu-22.04-arm
+            arch: aarch64
+            type: rpm
+            container_image: fedora:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Read version
+        id: version
+        # the unix assets carry the same plus identity as the windows installer:
+        # mcaselector-plus-<version>-plus-<plus.version>-<arch>.<type>
+        run: |
+          core=$(grep -oE '^version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          plus=$(grep -oE '^plus\.version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          echo "core=$core" >> "$GITHUB_OUTPUT"
+          echo "plus=$plus" >> "$GITHUB_OUTPUT"
+          echo "asset=mcaselector-plus-$core-plus-$plus-${{ matrix.arch }}.${{ matrix.type }}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Install Dependencies (DEB)
+        if: matrix.type == 'deb'
+        run: |
+          apt-get update -qq
+          apt-get install -qq -y ca-certificates findutils binutils fakeroot debhelper
+
+      - name: Install Dependencies (RPM)
+        if: matrix.type == 'rpm'
+        run: |
+          dnf install -y findutils tar gzip binutils rpm-build
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 21
+          distribution: zulu
+          java-package: jdk+fx
+          architecture: ${{ matrix.arch }}
+
+      - name: Build
+        run: |
+          echo "Current shell version: $BASH_VERSION"
+          chmod +x ./gradlew
+          chmod +x ./installer/init
+          ./gradlew build shadowJar -x test --stacktrace --warning-mode all
+          mkdir -p build/licenses
+          ./installer/init . build/licenses/LICENSE
+          ./gradlew jpackage -PmatrixType=${{ matrix.type }} --stacktrace --warning-mode all
+          ls -l build/jpackage
+          # jpackage already installs into /opt/mcaselector-plus and names the deb/rpm
+          # mcaselector-plus; only the version pair is added to the asset file name
+          mv build/jpackage/*.${{ matrix.type }} "build/jpackage/${{ steps.version.outputs.asset }}"
+          ls -l build/jpackage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.type }}
+          archive: false
+          path: build/jpackage/${{ steps.version.outputs.asset }}
+
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          # only the tag and the asset: the title, the body and the "latest" flag are set by the
+          # windows job, a second job writing them would race with it
+          tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: build/jpackage/${{ steps.version.outputs.asset }}
+
+  refresh-readme:
+    # The download table in README.md is written with `<!--vs-->2.9<!--ve-->` / `<!--pv-->1.0<!--pe-->`
+    # markers so the numbers can be filled in mechanically. Nothing filled them in: after 2.9-1.1 was
+    # published the README still linked to the 2.9-1.0 assets, so the repo page handed out the previous
+    # release. This job writes the tag's numbers into the markers and commits them back to `plus`.
+    needs: publish-windows
+    if: startsWith(github.ref, 'refs/tags/') && !cancelled()
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout plus
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: plus
+          fetch-depth: 0
+
+      - name: Fill version markers
+        run: |
+          core=$(grep -oE '^version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          plus=$(grep -oE '^plus\.version=.*' gradle.properties | cut -d= -f2 | tr -d '\r')
+          python3 - "$core" "$plus" <<'PY'
+          import pathlib, re, sys
+          core, plus = sys.argv[1], sys.argv[2]
+          for name in ("README.md", "README-PLUS.md"):
+              path = pathlib.Path(name)
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding="utf-8")
+              # a few markers were written with an extra dash in the closing tag (<!--pe--->), which no
+              # pattern matching <!--pe--> can see - normalise them first so nothing is left behind
+              text = re.sub(r"<!--(pv|vs|pe|ve)--->", r"<!--\\1-->", text)
+              # GitHub escapes < and > inside a link target (%3C!--vs--%3E), which breaks the download
+              # URLs, so the version markers are resolved once and then dropped from every link
+              markers = re.compile(r"<!--(vs|ve|pv|pe)-->")
+              text = re.sub(r"\]\([^)]*\)", lambda m: markers.sub("", m.group(0)), text)
+              text = re.sub(r"<!--vs-->[0-9.]*<!--ve-->", f"<!--vs-->{core}<!--ve-->", text)
+              text = re.sub(r"<!--pv-->[0-9.]*<!--pe-->", f"<!--pv-->{plus}<!--pe-->", text)
+              text = re.sub(r"releases/download/plus-[0-9.]+-[0-9.]+/mcaselector-plus-[0-9.]+-plus-[0-9.]+",
+                            f"releases/download/plus-{core}-{plus}/mcaselector-plus-{core}-plus-{plus}", text)
+              text = re.sub(r"Current release: \*\*plus-[0-9.]+-[0-9.]+\*\*",
+                            f"Current release: **plus-{core}-{plus}**", text)
+              text = re.sub(r"Download Version [0-9.]+-[0-9.]+", f"Download Version {core}-{plus}", text)
+              text = re.sub(r"mcaselector-plus-[0-9.]+-plus-[0-9.]+",
+                            f"mcaselector-plus-{core}-plus-{plus}", text)
+              path.write_text(text, encoding="utf-8")
+          PY
+          git diff --stat
+
+      - name: Commit README if it changed
+        run: |
+          if git diff --quiet -- README.md README-PLUS.md; then
+            echo "README already points at $GITHUB_REF_NAME"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md README-PLUS.md
+          git commit -m "docs: point downloads at $GITHUB_REF_NAME"
+          git push origin plus

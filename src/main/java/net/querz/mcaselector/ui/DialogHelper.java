@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.goog.mcaselector.plus.nbtstudio.ui.NbtStudioEditorDialog;
 import static net.querz.mcaselector.ui.dialog.ImportConfirmationDialog.ChunkImportConfirmationData;
 
 public class DialogHelper {
@@ -408,7 +409,7 @@ public class DialogHelper {
 	}
 
 	public static void editNBT(TileMap tileMap, Stage primaryStage) {
-		new NBTEditorDialog(tileMap, primaryStage).showAndWait();
+		new NbtStudioEditorDialog(tileMap, primaryStage).showAndWait();
 	}
 
 	public static void screenshot(TileMap tileMap, Stage primaryStage) {

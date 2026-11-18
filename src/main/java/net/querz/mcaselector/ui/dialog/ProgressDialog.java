@@ -13,11 +13,15 @@ import net.querz.mcaselector.io.JobHandler;
 import net.querz.mcaselector.text.Translation;
 import net.querz.mcaselector.ui.ProgressTask;
 import net.querz.mcaselector.ui.UIFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.function.Consumer;
 
 public class ProgressDialog extends Stage {
+
+	private static final Logger LOGGER = LogManager.getLogger(ProgressDialog.class);
 
 	private final Label title = new Label();
 	private final ProgressBar progressBar = new ProgressBar(-1);
@@ -60,6 +64,31 @@ public class ProgressDialog extends Stage {
 			@Override
 			protected Void call() {
 				r.accept(this);
+				return null;
+			}
+		};
+		progressBar.progressProperty().bind(currentTask.progressProperty());
+		label.textProperty().bind(currentTask.infoProperty());
+		currentTask.setOnFinish(this::close);
+		Thread thread = new Thread(currentTask);
+		thread.start();
+		showAndWait();
+		JobHandler.setTrimSaveData(true);
+	}
+
+	public void showProgressBarUntilDone(Consumer<ProgressTask> r) {
+		JobHandler.setTrimSaveData(false);
+		currentTask = new ProgressTask() {
+			@Override
+			protected Void call() {
+				try {
+					r.accept(this);
+				} catch (RuntimeException ex) {
+					LOGGER.error("progress task failed", ex);
+				} finally {
+					setLocked(false);
+					done(Translation.DIALOG_PROGRESS_DONE.toString());
+				}
 				return null;
 			}
 		};
