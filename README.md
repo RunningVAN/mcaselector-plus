@@ -47,7 +47,7 @@ Every asset of a release carries the plus identity:
 
 [**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.3<!--pe--> (RPM x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.3/mcaselector-plus-2.9-plus-1.3-x64.rpm)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.3<!--pe--> (Universal jar)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.3/mcaselector-plus-2.9-plus-1.1jar)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.3<!--pe--> (Universal jar)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.3/mcaselector-plus-2.9-plus-1.3jar)
 
 The jar runs with `java -jar mcaselector-plus-<core>-plus-<plus>.jar`; it is the same application as the
 installers, only without a bundled runtime.
