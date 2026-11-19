@@ -42,7 +42,7 @@ If you prefer a jar, grab `mcaselector-plus-<core>-plus-<plus>-all.jar` (fat jar
 [releases page](https://github.com/RunningVAN/mcaselector-plus/releases) and run it with JDK 21:
 
 ```bash
-java -jar mcaselector-plus-2.9-plus-1.2-all.jar
+java -jar mcaselector-plus-2.9-plus-1.3-all.jar
 ```
 
 On Linux, JavaFX has to be on the module path (`--module-path` / `--add-modules javafx.controls,javafx.fxml`),
@@ -66,7 +66,7 @@ MCA Selector Plus <core version> - Plus <plus version>
   `build/libs/mcaselector-<core>-all.jar`, the release workflow only renames the copy it uploads.
 
 Example: upstream releases MCA Selector 2.9 → this repository shows `MCA Selector Plus 2.9 - Plus 1.0`
-and ships `mcaselector-plus-2.9-plus-1.2-all.jar`. When upstream moves to 2.10, the next sync
+and ships `mcaselector-plus-2.9-plus-1.3-all.jar`. When upstream moves to 2.10, the next sync
 produces `MCA Selector Plus 2.10 - Plus 1.0` without touching a single line of Plus code.
 
 ## Branch model
@@ -121,10 +121,10 @@ enough for development builds.
 1. sync with upstream (`scripts/sync-upstream.sh` or the `sync-upstream` workflow),
 2. bump `plus.version` when the extension layer changed,
 3. `./gradlew test shadowJar`,
-4. tag `plus-<core>-<plus>`, e.g. `plus-2.9-1.2`, and push the tag:
+4. tag `plus-<core>-<plus>`, e.g. `plus-2.9-1.3`, and push the tag:
 
    ```bash
-   git tag plus-2.9-1.2 && git push origin plus-2.9-1.2
+   git tag plus-2.9-1.3 && git push origin plus-2.9-1.3
    ```
 
 The tag is the only trigger, and the upstream part is automated: the `sync-upstream` workflow fast-forwards
@@ -148,7 +148,7 @@ build itself stays the upstream one:
 | `publish-windows` | `build/inno/Output/mcaselector-plus-<core>-plus-<plus>-setup.exe`, `build/libs/mcaselector-<core>[-all].jar` | `mcaselector-plus-<core>-plus-<plus>-setup.exe`, `mcaselector-plus-<core>-plus-<plus>.jar`, `mcaselector-plus-<core>-plus-<plus>-all.jar` |
 | `publish-unix` | `build/jpackage/<type>` produced from the plus app image | `mcaselector-plus-<core>-plus-<plus>-<arch>.<type>` |
 
-Current release: **plus-2.9-1.2** — `-setup.exe`, `-aarch64.dmg`, `-x64.dmg`, `-x64.deb`,
+Current release: **plus-2.9-1.3** — `-setup.exe`, `-aarch64.dmg`, `-x64.dmg`, `-x64.deb`,
 `-aarch64.deb`, `-x64.rpm`, `-aarch64.rpm`, `-all.jar` and `.jar`.
 
 ## What the Plus layer adds
@@ -205,11 +205,11 @@ both work wherever upstream filters and fields work:
 
 ```bash
 # which chunks contain minecraft:stone (writes a selection csv)
-java -jar mcaselector-plus-2.9-plus-1.2-all.jar --mode select \
+java -jar mcaselector-plus-2.9-plus-1.3-all.jar --mode select \
   -w /path/to/world --query 'NBT contains "value=minecraft:stone"' -o stone.csv
 
 # rewrite the whole world
-java -jar mcaselector-plus-2.9-plus-1.2-all.jar --mode change \
+java -jar mcaselector-plus-2.9-plus-1.3-all.jar --mode change \
   -w /path/to/world --fields 'NbtReplace="value=minecraft:stone mode=exact => minecraft:dirt"'
 ```
 

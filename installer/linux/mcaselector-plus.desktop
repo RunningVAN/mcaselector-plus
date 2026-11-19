@@ -10,4 +10,4 @@ StartupWMClass=net.querz.mcaselector.ui.Window
 # the desktop entry spec version, not the application version
 Version=1.5
 # application version, both layers: <upstream> - Plus <plus layer>
-X-MCA-Selector-Version=2.9 - Plus 1.2
+X-MCA-Selector-Version=2.9 - Plus 1.3

@@ -37,6 +37,10 @@ var plusVersion = project.findProperty('plus.version').toString()
 // reads like an upstream build. The readable form "MCA Selector Plus 2.9 - Plus 1.1" is used wherever
 // a string is allowed (description, installer display name, window title, about dialog)
 var packVersion = projectVersion + "." + plusVersion
+// macOS is the exception: CFBundleVersion accepts 1 to 3 numbers, so a four part version makes the
+// dmg build fail with "invalid CFBundleVersion". The plus layer is folded into the third component
+// there instead (2.9 + 1.2 -> 2.9.12)
+var macVersion = projectVersion + "." + plusVersion.replace(".", "")
 var plusDescription = "MCA Selector Plus " + projectVersion + " - Plus " + plusVersion
 var plusVendor = 'Querz, RunningVAN'
 var plusUrl = project.findProperty('plus.application.url').toString()
@@ -180,6 +184,9 @@ runtime {
 			]
 		} else if (OperatingSystem.current().isMacOsX()) {
 			installerType = "dmg"
+			// CFBundleVersion stops at three numbers, so the dmg gets the folded version (2.9.12)
+			// while the readable pair stays in the app name, the description and the dmg file name
+			appVersion = macVersion
 			// "MCA Selector Plus.app" and "MCA Selector Plus-x.y.dmg", not "MCA Selector ...",
 			// so the bundle sits next to the upstream one in /Applications
 			imageName = plusApplicationName
