@@ -7,7 +7,7 @@ gradlePropertiesFile="$1/gradle.properties"
 ReadGradleProperty() {
   # match the key exactly: the plus layer adds keys such as plus.version and
   # plus.application.name, a loose grep would collect several lines here
-  local value=`grep -m 1 "^$1=" "$gradlePropertiesFile" | cut -d'=' -f2-`
+  local value=`grep -a -m 1 "^$1=" "$gradlePropertiesFile" | cut -d'=' -f2- | tr -d '\r'`
   echo "$value"
 }
 
@@ -30,6 +30,10 @@ applicationAuthor=$(Property 'plus.application.author' 'application.author')
 applicationCopyright=$(Property 'plus.copyright' 'application.copyright')
 applicationVersion=$(ReadGradleProperty 'version')
 plusVersion=$(ReadGradleProperty 'plus.version')
+# the installer must not claim to be plain upstream <version>, it carries the pair: 2.9 + 1.1 -> 2.9.1.1
+packVersion="$applicationVersion.$plusVersion"
+# VersionInfoVersion has to be exactly four numeric parts, so shorter pairs get padded and longer ones cut
+winVersion=$(echo "$packVersion" | awk -F. '{printf "%s.%s.%s.%s", $1, ($2==""?"0":$2), ($3==""?"0":$3), ($4==""?"0":$4)}')
 
 # Installer <project root> <version>
 Installer() {
@@ -52,6 +56,8 @@ Installer() {
   sed -i "s/\${applicationCopyright}/$applicationCopyright/g" "$innoSetupDir/inno.iss"
   sed -i "s/\${applicationVersion}/$applicationVersion/g" "$innoSetupDir/inno.iss"
   sed -i "s/\${plusVersion}/$plusVersion/g" "$innoSetupDir/inno.iss"
+  sed -i "s/\${packVersion}/$packVersion/g" "$innoSetupDir/inno.iss"
+  sed -i "s/\${winVersion}/$winVersion/g" "$innoSetupDir/inno.iss"
 }
 
 Installer $1

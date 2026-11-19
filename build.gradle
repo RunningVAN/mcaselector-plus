@@ -32,6 +32,14 @@ var matrixType = project.findProperty("matrixType").toString()
 var projectName = project.name
 var projectVersion = project.version
 var plusVersion = project.findProperty('plus.version').toString()
+// package metadata (deb/rpm/dmg/exe properties, app image, Inno setup) only accepts numbers, so both
+// layers are folded into <version>.<plus.version> (2.9 + 1.1 -> 2.9.1.1) instead of a bare "2.9" that
+// reads like an upstream build. The readable form "MCA Selector Plus 2.9 - Plus 1.1" is used wherever
+// a string is allowed (description, installer display name, window title, about dialog)
+var packVersion = projectVersion + "." + plusVersion
+var plusDescription = "MCA Selector Plus " + projectVersion + " - Plus " + plusVersion
+var plusVendor = 'Querz, RunningVAN'
+var plusUrl = project.findProperty('plus.application.url').toString()
 
 javafx {
 	version = "$java.sourceCompatibility"
@@ -153,11 +161,21 @@ runtime {
 
 	jpackage {
 		jvmArgs = ['-Xmx4096m']
+		// the package version is the version pair, otherwise the deb/rpm/dmg and the windows file
+		// properties claim to be plain upstream "2.9"
+		appVersion = packVersion
+		// this plugin version has no vendor/description fields, so they travel in the option lists
+		// below: beryx passes imageOptions to the app-image stage and installerOptions to the
+		// installer stage, so each list only carries options valid for that stage
 		if (OperatingSystem.current().isWindows()) {
 			imageName = plusApplicationName
 			skipInstaller = true
+			// --vendor / --description / --copyright are general jpackage options, so they are
+			// accepted by both stages; --about-url and --license-file are installer stage only
 			imageOptions = [
 				'--icon', 'installer/windows/icon.ico',
+				'--vendor', plusVendor,
+				'--description', plusDescription,
 				'--copyright', copyright
 			]
 		} else if (OperatingSystem.current().isMacOsX()) {
@@ -168,11 +186,16 @@ runtime {
 			installerName = plusApplicationName
 			imageOptions = [
 				'--icon', 'installer/macos/icon.icns',
+				'--vendor', plusVendor,
+				'--description', plusDescription,
 				'--copyright', copyright
 			]
 			installerOptions = [
 				'--icon', 'installer/macos/icon.icns',
+				'--vendor', plusVendor,
+				'--description', plusDescription,
 				'--copyright', copyright,
+				'--about-url', plusUrl,
 				'--license-file', 'build/licenses/LICENSE'
 			]
 		} else if (OperatingSystem.current().isLinux()) {
@@ -184,12 +207,17 @@ runtime {
 			installerName = plusLinuxName
 			imageOptions = [
 				'--icon', 'installer/linux/icon.png',
-				'--copyright', copyright,
+				'--vendor', plusVendor,
+				'--description', plusDescription,
+				'--copyright', copyright
 			]
 			installerOptions = [
 				'--linux-shortcut',
 				'--icon', 'installer/linux/icon.png',
+				'--vendor', plusVendor,
+				'--description', plusDescription,
 				'--copyright', copyright,
+				'--about-url', plusUrl,
 				'--resource-dir', 'installer/linux',
 				'--license-file', 'build/licenses/LICENSE'
 			]

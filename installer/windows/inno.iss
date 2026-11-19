@@ -2,8 +2,10 @@
 ; Plus layer uses its own AppId so it installs side by side with upstream MCA Selector
 AppId={{8F3B2C41-7D95-4E6A-9B12-5C0D8E7A3F56}
 AppName=${applicationName}
-AppVersion=${applicationVersion}
-;AppVerName=${applicationName} ${applicationVersion}
+; the version pair, not a bare upstream "2.9": 2.9 + plus 1.1 -> 2.9.1.1
+AppVersion=${packVersion}
+; readable form in the uninstall entry: "MCA Selector Plus 2.9 - Plus 1.1"
+AppVerName=${applicationName} ${applicationVersion} - Plus ${plusVersion}
 AppPublisher=${applicationAuthor}
 AppPublisherURL=${applicationUrl}
 AppSupportURL=${applicationUrl}
@@ -21,7 +23,7 @@ SolidCompression=yes
 WizardStyle=modern
 WizardSmallImageFile=small.bmp
 WizardImageFile=large.bmp
-VersionInfoVersion=${applicationVersion}.0
+VersionInfoVersion=${winVersion}
 
 [Languages]
 Name: "en_GB"; MessagesFile: "compiler:Default.isl"

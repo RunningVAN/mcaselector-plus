@@ -30,10 +30,47 @@ AppendLicense() {
 $content"
 }
 
+# GradleProperty <project root> <key>
+GradleProperty() {
+  grep -a -m 1 "^$2=" "$1/gradle.properties" | cut -d'=' -f2- | tr -d '\r'
+}
+
+# ForkNotice <project root>
+# the upstream MIT text alone reads like a plain "MCA Selector <version>" build, so the shipped
+# license file opens with the fork identity and both version numbers: the upstream core version and
+# the version of the plus layer that is actually installed
+ForkNotice() {
+  local core=$(GradleProperty "$1" 'version')
+  local plus=$(GradleProperty "$1" 'plus.version')
+  local name=$(GradleProperty "$1" 'plus.application.name')
+  local author=$(GradleProperty "$1" 'plus.application.author')
+  local url=$(GradleProperty "$1" 'plus.application.url')
+  echo "$name $core - Plus $plus
+
+This package is $name $core - Plus $plus, a fork of MCA Selector $core
+(https://github.com/Querz/mcaselector).
+
+  upstream MCA Selector version : $core
+  plus layer version            : $plus
+  authors                       : $author
+  project page                  : $url
+
+The MIT license below covers MCA Selector $core as published by Querz and the
+$name $plus changes built on top of it; both are distributed under the same
+terms. Copyright (c) 2018 - 2026 Querz, RunningVAN."
+}
+
 # BuildLicense <project root> <output file>
 BuildLicense() {
-  local finalLicense=$(<"$1/LICENSE")
-  finalLicense="$finalLicense
+  local core=$(GradleProperty "$1" 'version')
+  local finalLicense="$(ForkNotice "$1")
+
+
+############################################################
+#$(Pad 'License for upstream MCA Selector '$core ' ' 58)
+############################################################
+
+$(<"$1/LICENSE")
 
 
 ############################################################

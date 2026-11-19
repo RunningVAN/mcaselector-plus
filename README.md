@@ -33,21 +33,21 @@ CLI reference of the NBT tools in [README-NBT-STUDIO.md](README-NBT-STUDIO.md).
 Every asset of a release carries the plus identity:
 `mcaselector-plus-<core version>-plus-<plus version>-<platform>`, tag `plus-<core version>-<plus version>`.
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (Windows Installer)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-setup.exe)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (Windows Installer)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-setup.exe)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (macOS arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-aarch64.dmg)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (macOS arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-aarch64.dmg)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (macOS x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-x64.dmg)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (macOS x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-x64.dmg)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (DEB arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-aarch64.deb)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (DEB arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-aarch64.deb)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (DEB x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-x64.deb)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (DEB x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-x64.deb)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (RPM arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-aarch64.rpm)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (RPM arm64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-aarch64.rpm)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (RPM x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1-x64.rpm)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (RPM x64)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.2-x64.rpm)
 
-[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.1<!--pe--> (Universal jar)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.1/mcaselector-plus-2.9-plus-1.1jar)
+[**Download Version <!--vs-->2.9<!--ve--> - Plus <!--pv-->1.2<!--pe--> (Universal jar)**](https://github.com/RunningVAN/mcaselector-plus/releases/download/plus-2.9-1.2/mcaselector-plus-2.9-plus-1.1jar)
 
 The jar runs with `java -jar mcaselector-plus-<core>-plus-<plus>.jar`; it is the same application as the
 installers, only without a bundled runtime.

@@ -32,7 +32,7 @@ To create the 'debug.log' file, follow these steps:
 **Environment (please complete the following information):**
 - OS: [e.g. Windows 10]
 - Java version: [e.g. 21 and no, "newest version" is not a version]
-- Version of MCA Selector Plus [e.g. 2.9 - Plus 1.0, shown in Help --> About]
+- Version of MCA Selector Plus [e.g. 2.9 - Plus 1.2, shown in Help --> About]
 
 **Additional context**
 Add any other context about the problem here, e.g.:

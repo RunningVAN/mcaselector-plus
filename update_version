@@ -25,6 +25,10 @@ sed -i -E "s/mcaselector-plus-[0-9]+\.[0-9]+(\.[0-9]+)?-plus-[0-9]+\.[0-9]+(\.[0
 
 # the workflows derive every asset name from gradle.properties at build time, so there is nothing to
 # patch in .github/workflows/release-plus.yml - the readme was the only hard coded copy
+# README-PLUS.md quotes the current tag and jar name in its examples
+sed -i -E "s/plus-[0-9]+\.[0-9]+(\.[0-9]+)?-[0-9]+\.[0-9]+(\.[0-9]+)?/plus-$applicationVersion-$plusVersion/g" 'README-PLUS.md'
+sed -i -E "s/mcaselector-plus-[0-9]+\.[0-9]+(\.[0-9]+)?-plus-[0-9]+\.[0-9]+(\.[0-9]+)?/mcaselector-plus-$applicationVersion-plus-$plusVersion/g" 'README-PLUS.md'
+
 
 # update issue template
 sed -i -E "s/Version of MCA Selector Plus \[e\.g\. [0-9]+\.[0-9]+(\.[0-9]+)? - Plus [0-9]+\.[0-9]+(\.[0-9]+)?/Version of MCA Selector Plus [e.g. $applicationVersion - Plus $plusVersion/g" '.github/ISSUE_TEMPLATE/bug_report.md'
@@ -34,8 +38,10 @@ Len() {
   echo "${#res}"
 }
 
-# update the linux desktop entry
-sed -i -E "s/Version=[0-9]+\.[0-9]+(\.[0-9]+)?/Version=$applicationVersion/g" 'installer/linux/mcaselector-plus.desktop'
+# update the linux desktop entry: Version= stays the desktop entry spec version, the application
+# version lives in the vendor key and names both layers, otherwise the entry claims to be a plain
+# upstream <version> install
+sed -i -E "s/^X-MCA-Selector-Version=.*/X-MCA-Selector-Version=$applicationVersion - Plus $plusVersion/g" 'installer/linux/mcaselector-plus.desktop'
 
 # update copyright year (keep whatever sign the file uses, upstream writes a half width one)
 sed -i -E "s/(copyright=.*2018 *- *)[0-9]{4}/\1$(date +%Y)/g" 'gradle.properties'
