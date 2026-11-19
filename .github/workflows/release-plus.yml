@@ -14,10 +14,13 @@ permissions:
   contents: write
 
 # one release per tag: the windows and the unix jobs publish into the same release, and a second
-# push of the same tag must not interleave with a running one
+# push of the same tag must not interleave with a running one. A moved tag used to leave the older
+# run alive, and because that run still carried the previous workflow it published upstream named
+# packages (mcaselector-2.9-*.deb/rpm/dmg) into plus-2.9-1.3 next to the plus assets - so a newer
+# push of the same tag now cancels the stale run instead of queueing behind it
 concurrency:
   group: release-plus-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish-windows:
@@ -152,6 +155,13 @@ jobs:
               *) cp "$jar" "dist/$asset.jar" ;;
             esac
           done
+          # the release carries plus assets only: a file that still sits under an upstream name
+          # (mcaselector-<version>*.exe/.jar) would be published next to the plus build and make the
+          # download table point at the wrong binary, so it is dropped here rather than uploaded
+          find dist -maxdepth 1 -type f ! -name 'mcaselector-plus-*' -print -delete
+          count=$(find dist -maxdepth 1 -type f -name 'mcaselector-plus-*' | wc -l)
+          echo "plus assets collected: $count"
+          test "$count" -ge 3
           ls -l dist
         shell: bash
 
@@ -278,6 +288,13 @@ jobs:
           # jpackage already installs into /opt/mcaselector-plus and names the deb/rpm
           # mcaselector-plus; only the version pair is added to the asset file name
           mv build/jpackage/*.${{ matrix.type }} "build/jpackage/${{ steps.version.outputs.asset }}"
+          # a package must never leave this job under an upstream name: that is exactly how
+          # plus-2.9-1.3 ended up with mcaselector-2.9-x64.deb/rpm/dmg next to the plus assets
+          case "${{ steps.version.outputs.asset }}" in
+            mcaselector-plus-*) ;;
+            *) echo "refusing to publish a non plus asset name"; exit 1 ;;
+          esac
+          find build/jpackage -maxdepth 1 -type f ! -name 'mcaselector-plus-*' -print -delete
           ls -l build/jpackage
 
       - name: Upload artifact
